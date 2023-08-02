@@ -121,6 +121,8 @@ import {getTeacher, addTeacher, editTeacher, delTeacher} from '../api'
 import Cookie from "js-cookie";
 import { saveAs } from 'file-saver';
 import * as XLSX from "xlsx";
+import axios from "axios";
+// import {time} from "mockjs/src/mock/random/date";
 
 export default {
   data() {
@@ -321,11 +323,19 @@ export default {
       saveAs(blob, 'teachers.xlsx');
     },
 
-    // 执行批量添加学生操作的函数
+    // 执行批量添加教师操作的函数
     batchAddTeachers() {
       console.log(this.excelData,'excelData')
       Promise.all(
           this.excelData.map((teacher) => addTeacher(teacher))
+          // this.excelData.map((teacher) => {
+          //   // 在添加教师之前检查是否已存在相同教师信息
+          //   console.log(this.checkIfTeacherExists(teacher))
+          //   if (this.checkIfTeacherExists(teacher)) {
+          //     return addTeacher(teacher);
+          //   }
+          //   return Promise.resolve(); // 返回一个已解决的Promise，跳过添加步骤
+          // })
       )
           .then(() => {
             // 所有教师成功添加
@@ -338,10 +348,28 @@ export default {
             // 处理错误
             this.excelData = []; // 清空excelData数组
             console.error('批量添加失败', error);
+            this.getList()
             // 可选择显示错误消息
-            this.$message.error('批量添加教师失败');
+            this.$message.error('部分教师信息存在，已跳过该信息');
           });
     },
+    checkIfTeacherExists(teacher) {
+        const name = teacher.name;
+        const teacherId = teacher.teacherId;
+        // 构造请求URL
+        const url = `/api/check-teacher/?name=${name}&teacher_id=${teacherId}`;
+        // 发送GET请求
+        return axios.get(url)
+            .then(response => {
+              // 处理后端返回的数据
+              const data = response.data;
+              return data.exists;  // 返回是否存在的结果
+            })
+            .catch(error => {
+              console.error('请求出错:', error);
+              throw error;
+            });
+      },
     handleBatchDelete() {
       if (this.selectedRows.length === 0) {
         this.$message.warning('请选择要删除的教师信息')

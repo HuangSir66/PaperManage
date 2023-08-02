@@ -210,8 +210,6 @@ export default {
               this.dialogVisible = false
             })
           }
-
-
         }
       })
     },
@@ -256,10 +254,13 @@ export default {
         });
       });
     },
+    //判断为添加学生
     handleAdd() {
       this.modalType = 0
+      //打开弹窗
       this.dialogVisible = true
     },
+    //复选框
     handleSelectionChange(selection) {
       this.selectedRows = selection
     },
@@ -341,7 +342,7 @@ export default {
             this.excelData = []; // 清空excelData数组
             console.error('批量添加失败', error);
             // 可选择显示错误消息
-            this.$message.error('批量添加学生失败');
+            this.$message.error('部分学生信息存在，已跳过该信息');
           });
     },
     //执行批量删除学生的函数

@@ -1,10 +1,6 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
-import Home from "@/views/Home.vue";
 import Main from "@/views/Main.vue";
-import Student from "@/views/Student.vue";
-import Teacher from "@/views/Teacher.vue";
-import TopicList from "@/views/TopicList.vue";
 import Login from "@/views/Login.vue";
 Vue.use(VueRouter)
 

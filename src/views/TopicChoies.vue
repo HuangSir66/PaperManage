@@ -12,19 +12,19 @@
             <el-option v-for="stu in studentData" :key="stu.id" :label="stu.studentId" :value="stu.id"></el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="学生姓名" prop="studentName">
-          <el-select v-model="form.studentName" placeholder="选择学生姓名">
-            <el-option v-for="stu in studentData" :key="stu.id" :label="stu.name" :value="stu.id"></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="指导教师" prop="teacherName">
-          <el-select v-model="form.teacherName" placeholder="选择教师">
-            <el-option v-for="teacher in teacherData" :key="teacher.id" :label="teacher.name" :value="teacher.id"></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="选择论文" prop="topicName">
-          <el-select v-model="form.topicName" placeholder="选择论文">
-            <el-option v-for="topic in topicData" :key="topic.id" :label="topic.title" :value="topic.id"></el-option>
+<!--        <el-form-item label="学生姓名" prop="studentName">-->
+<!--          <el-select v-model="form.studentName" placeholder="选择学生姓名">-->
+<!--            <el-option v-for="stu in studentData" :key="stu.id" :label="stu.name" :value="stu.id"></el-option>-->
+<!--          </el-select>-->
+<!--        </el-form-item>-->
+<!--        <el-form-item label="指导教师" prop="teacherName">-->
+<!--          <el-select v-model="form.teacherName" placeholder="选择教师">-->
+<!--            <el-option v-for="teacher in teacherData" :key="teacher.id" :label="teacher.name" :value="teacher.id"></el-option>-->
+<!--          </el-select>-->
+<!--        </el-form-item>-->
+        <el-form-item label="选择论文" prop="topicTitle">
+          <el-select v-model="form.topicTitle" placeholder="选择论文">
+            <el-option v-for="topic in teachTopic" :key="topic.id" :label="topic.title" :value="topic.id"></el-option>
           </el-select>
         </el-form-item>
       </el-form>
@@ -64,21 +64,21 @@
             prop="studentName"
             label="学生姓名">
           <template slot-scope="scope">
-            {{getStudentName(scope.row.studentName)}}
+            {{getStudentName(scope.row.studentId)}}
           </template>
         </el-table-column>
         <el-table-column
             prop="topicName"
             label="论文标题">
           <template slot-scope="scope">
-            {{getTopicTitle(scope.row.topicName)}}
+            {{getTopicTitle(scope.row.topicTitle)}}
           </template>
         </el-table-column>
         <el-table-column
             prop="teacherName"
             label="指导教师">
           <template slot-scope="scope">
-            {{getTopicTeacherName(scope.row.teacherName)}}
+            {{getTopicTeacherName(scope.row.topicTitle)}}
           </template>
         </el-table-column>
         <el-table-column
@@ -112,9 +112,9 @@ export default {
       dialogVisible: false,
       form: {
         studentId:'',
-        studentName:'',
-        teacherName: '',
-        topicName: '',
+        // studentName:'',
+        // teacherName: '',
+        topicTitle: '',
       },
       rules: {
         studentId: [
@@ -135,6 +135,7 @@ export default {
       teacherData:[],
       studentData:[],
       topicData:[],
+      teachTopic:[],
       modalType: 0, // 0表示新增的弹窗， 1表示编辑
       total: 0, //当前的总条数
       pageData: {
@@ -162,18 +163,32 @@ export default {
             addTopicList(this.form).then(() => {
               // 重新获取列表的接口
               this.getList()
+              // 清空表单的数据
+              this.$refs.form.resetFields()
+              // 关闭弹窗
+              this.dialogVisible = false
+            }).catch((error)=>{
+              // 判断学号是否存在
+              if (error.response && error.response.status === 400 && error.response.data.error === '学生已选题') {
+                // 显示学号已存在的错误弹窗
+                this.$message.error('学生已选题')
+              } else {
+                // 显示其他错误信息
+                this.$message.error('添加学生失败')
+              }
             })
           } else {
             editTopicList(this.form).then(() => {
               // 重新获取列表的接口
               this.getList()
+              // 清空表单的数据
+              this.$refs.form.resetFields()
+              // 关闭弹窗
+              this.dialogVisible = false
             })
           }
 
-          // 清空表单的数据
-          this.$refs.form.resetFields()
-          // 关闭弹窗
-          this.dialogVisible = false
+
         }
       })
     },
@@ -228,7 +243,6 @@ export default {
       getTopicList({params: {...this.userForm, ...this.pageData}}).then(({ data }) => {
         // console.log(data,'data')
         this.tableData = data.list
-
         this.total = data.count || 0
       })
 
@@ -246,6 +260,7 @@ export default {
       //获取论文信息
       getTopic().then(({data})=>{
         this.topicData = data.allTop
+        this.teachTopic = data.teacQueryset
       })
     },
     // 选择页码的回调函数
@@ -282,16 +297,25 @@ export default {
     //根据主键通过论文表查找论文信息
     getTopicTeacherName(scopeRowTopicId){
       const topic = this.topicData.find(c=>c.id===scopeRowTopicId)
-      console.log(topic.teacherName,'topic.teachername')
-      const teacher_name = this.teacherData.find(c=>c.id === topic.teacherName)
-      return teacher_name?teacher_name.name:''
+      //如果未添加if判断条件，则会在挂载前加载teacherName导致报错
+      if(topic){
+        // console.log(topic.teacherName,'topic.teachername')
+        const teacher_name = this.teacherData.find(c=>c.id === topic.teacherName)
+        return teacher_name?teacher_name.name:''
+      }
     },
     shouldShowEditButton(row){
       // 根据特定条件判断是否显示编辑按钮
       // 这里可以根据需要修改条件判断的逻辑
       // console.log(row.teacherName,'row1')
       // console.log(this.form.teacherName,'row2')
-      return row.teacherName === this.form.teacherName ;
+      // console.log(row,'row')
+      const topic = this.topicData.find(c=>c.id===row.topicTitle)
+      // console.log(topic,'topic')
+      if(topic){
+        // console.log(topic.teacherName,"teachername")
+        return topic.teacherName === parseInt(Cookie.get('id'))
+      }
     },
   },
   // computed:{
